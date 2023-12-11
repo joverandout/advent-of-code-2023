@@ -2,7 +2,7 @@
 
 module Day02 (module Day02) where
 
-import Data.Bits (Bits (xor))
+import Control.Arrow
 import Data.Map (Map ())
 import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
@@ -10,7 +10,7 @@ import Text.Regex.Applicative (Alternative (many), RE, string, sym, (<|>), (=~))
 import Text.Regex.Applicative.Common (decimal)
 
 day2 :: IO ()
-day2 = readFile "inputs/day02.txt" >>= print . part1 . mapMaybe (=~ parseGame) . lines
+day2 = readFile "inputs/day02.txt" >>= print . (part1 &&& part2) . mapMaybe (=~ parseGame) . lines
 
 data Colour = Red | Green | Blue deriving (Show, Eq, Ord)
 
@@ -76,3 +76,6 @@ sumGames ((Game id _) : xs) = id + sumGames xs
 
 part1 :: [Game] -> Int
 part1 games = sumGames (filter isGameEligible games)
+
+part2 :: [Game] -> Int
+part2 game = sum $ map (product . gameToMap) game
