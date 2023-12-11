@@ -38,7 +38,10 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , parsec
+    , regex-applicative
     , regex-tdfa
+    , unordered-containers
   default-language: Haskell2010
 
 executable AdventOfCode2023-exe
@@ -54,7 +57,10 @@ executable AdventOfCode2023-exe
       AdventOfCode2023
     , base >=4.7 && <5
     , containers
+    , parsec
+    , regex-applicative
     , regex-tdfa
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite AdventOfCode2023-test
@@ -71,5 +77,8 @@ test-suite AdventOfCode2023-test
       AdventOfCode2023
     , base >=4.7 && <5
     , containers
+    , parsec
+    , regex-applicative
     , regex-tdfa
+    , unordered-containers
   default-language: Haskell2010
