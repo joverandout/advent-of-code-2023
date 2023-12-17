@@ -6,7 +6,8 @@ import Control.Arrow
 import Data.Map (Map ())
 import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
-import Text.Regex.Applicative (Alternative (many), RE, string, sym, (<|>), (=~))
+import Lib (seperated)
+import Text.Regex.Applicative (RE, string, sym, (<|>), (=~))
 import Text.Regex.Applicative.Common (decimal)
 
 day2 :: IO ()
@@ -21,9 +22,6 @@ data Pull = Pull [Pick] deriving (Show)
 data PickKVP = PickKVP (Colour, Int) deriving (Show)
 
 data Game = Game {id :: Int, pulls :: [Pull]} deriving (Show)
-
-seperated :: Alternative f => f a -> f b -> f [a]
-seperated p filler = (:) <$> p <*> many (filler *> p)
 
 parseColour :: RE Char Colour
 parseColour =
