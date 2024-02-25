@@ -2,12 +2,12 @@
 
 module Day05 (module Day05) where
 
-import Data.Char (GeneralCategory (NotAssigned), isDigit)
-import Data.Map (Map, empty, insert, lookup, size)
+import Data.Char (isDigit)
+import Data.Map (Map, empty, insert, lookup)
 import Data.Maybe
 
 day5 :: IO ()
-day5 = readFile "inputs/day05.txt" >>= print . parseText . lines
+day5 = readFile "inputs/day05.txt" >>= print . part1 . parseText . lines
 
 data LineMap = LineMap {destination, source, mapLength :: Int} deriving (Show)
 
@@ -15,7 +15,7 @@ data Almanac = Almanac
   { seeds :: [Int],
     seedToSoil,
     soilToFertilizer,
-    seedToWater,
+    fertilizerToWater,
     waterToLight,
     lightToTemperature,
     tempToHumidity,
@@ -68,10 +68,22 @@ dataToAlmanac seeds' [soilMap, fertilizerMap, waterMap, lightMap, temperatureMap
       { seeds = seeds',
         seedToSoil = soilMap,
         soilToFertilizer = fertilizerMap,
-        seedToWater = waterMap,
+        fertilizerToWater = waterMap,
         waterToLight = lightMap,
         lightToTemperature = temperatureMap,
         tempToHumidity = humidityMap,
         humidityToLocation = locationMap
       }
 dataToAlmanac _ _ = Nothing
+
+part1 :: Maybe Almanac -> Maybe Int
+part1 Nothing = Nothing
+part1 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = Just (almanacToLowestLocation seeds [sTS, sTF, fTW, wTL, lTT, tTH, hTL])
+
+almanacToLowestLocation :: [Int] -> [Map Int Int] -> Int
+almanacToLowestLocation ints [] = minimum ints
+almanacToLowestLocation ints (m : ms) = almanacToLowestLocation (mapInts ints [] m) ms
+
+mapInts :: [Int] -> [Int] -> Map Int Int -> [Int]
+mapInts [] l _ = l
+mapInts (x : xs) l m = mapInts xs ((++) l [lookUpInTotalMap x m]) m
