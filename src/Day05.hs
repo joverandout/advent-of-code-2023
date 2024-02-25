@@ -1,15 +1,13 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Day05 (module Day05) where
 
-import Data.Char (isDigit)
-import Data.Map (Map, empty, insert, lookup)
+import Data.Char (GeneralCategory (NotAssigned), isDigit)
+import Data.Map (Map, empty, insert, lookup, size)
 import Data.Maybe
 
 day5 :: IO ()
-day5 = readFile "inputs/day05.txt" >>= print . lines
+day5 = readFile "inputs/day05.txt" >>= print . parseText . lines
 
 data LineMap = LineMap {destination, source, mapLength :: Int} deriving (Show)
 
@@ -24,6 +22,7 @@ data Almanac = Almanac
     humidityToLocation ::
       Map Int Int
   }
+  deriving (Show)
 
 lineMapToTotalMap :: LineMap -> Map Int Int -> Map Int Int
 lineMapToTotalMap (LineMap _ _ 0) m = m
@@ -51,26 +50,28 @@ isLineMap :: String -> Bool
 isLineMap s = length (parseInts s) == 3
 
 parseLinesToMaps :: [String] -> [LineMap] -> [Map Int Int] -> [Map Int Int]
-parseLinesToMaps [] _ m = m
-parseLinesToMaps [s] lm m = (++) m [lineMapsToTotalMaps ((++) lm [parseLineMap s]) Data.Map.empty]
+parseLinesToMaps [] _ m = filter (/= empty) m
+parseLinesToMaps [s] lm m = filter (/= empty) $ (++) m [lineMapsToTotalMaps ((++) lm [parseLineMap s]) Data.Map.empty]
 parseLinesToMaps (s : ss) lm m
   | isLineMap s = parseLinesToMaps ss ((++) lm [parseLineMap s]) m
-  | not $ isLineMap s = parseLinesToMaps ss lm ((++) m [lineMapsToTotalMaps lm Data.Map.empty])
+  | not $ isLineMap s = parseLinesToMaps ss [] ((++) m [lineMapsToTotalMaps lm Data.Map.empty])
+parseLinesToMaps _ _ _ = []
 
-input =
-  [ "seed-to-soil map:",
-    "50 98 2",
-    "52 50 48",
-    "soil-to-fertilizer map:",
-    "0 15 37",
-    "37 52 2",
-    "39 0 15",
-    "fertilizer-to-water map:",
-    "49 53 8",
-    "0 11 42",
-    "42 0 7",
-    "57 7 4",
-    "water-to-light map:",
-    "88 18 7",
-    "18 25 70"
-  ]
+parseText :: [String] -> Maybe Almanac
+parseText (x : xs) = dataToAlmanac (parseInts x) $ parseLinesToMaps xs [] []
+parseText _ = Nothing
+
+dataToAlmanac :: [Int] -> [Map Int Int] -> Maybe Almanac
+dataToAlmanac seeds' [soilMap, fertilizerMap, waterMap, lightMap, temperatureMap, humidityMap, locationMap] =
+  Just $
+    Almanac
+      { seeds = seeds',
+        seedToSoil = soilMap,
+        soilToFertilizer = fertilizerMap,
+        seedToWater = waterMap,
+        waterToLight = lightMap,
+        lightToTemperature = temperatureMap,
+        tempToHumidity = humidityMap,
+        humidityToLocation = locationMap
+      }
+dataToAlmanac _ _ = Nothing
