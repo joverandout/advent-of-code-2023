@@ -3,13 +3,13 @@
 module Day05 (module Day05) where
 
 import Data.Char (isDigit)
-import Data.Map (Map, empty, insert, lookup)
-import Data.Maybe
 
 day5 :: IO ()
 day5 = readFile "inputs/day05.txt" >>= print . part1 . parseText . lines
 
 data LineMap = LineMap {destination, source, mapLength :: Int} deriving (Show)
+
+type RangeMap = ((Int, Int), Int)
 
 data Almanac = Almanac
   { seeds :: [Int],
@@ -20,23 +20,25 @@ data Almanac = Almanac
     lightToTemperature,
     tempToHumidity,
     humidityToLocation ::
-      Map Int Int
+      [RangeMap]
   }
   deriving (Show)
 
-lineMapToTotalMap :: LineMap -> Map Int Int -> Map Int Int
-lineMapToTotalMap (LineMap _ _ 0) m = m
-lineMapToTotalMap (LineMap d s l) m = lineMapToTotalMap (LineMap (d + 1) (s + 1) (l - 1)) (insert s d m)
+lineMapToTotalMap :: LineMap -> [RangeMap] -> [RangeMap]
+lineMapToTotalMap (LineMap d s l) x = (++) x [((s, s + (l - 1)), d - s)]
 
-lineMapsToTotalMaps :: [LineMap] -> Map Int Int -> Map Int Int
-lineMapsToTotalMaps xs m = foldl (flip lineMapToTotalMap) m xs
+lineMapsToTotalMaps :: [LineMap] -> [RangeMap] -> [RangeMap]
+lineMapsToTotalMaps xs mappers =
+  foldl
+    (\mappers x -> (++) mappers $ lineMapToTotalMap x [])
+    mappers
+    xs
 
-lookUpInTotalMap :: Int -> Map Int Int -> Int
-lookUpInTotalMap x m
-  | isNothing y = x
-  | otherwise = (\(Just i) -> i) y
-  where
-    y = Data.Map.lookup x m
+lookUpInTotalMap :: Int -> [RangeMap] -> Int
+lookUpInTotalMap x [] = x
+lookUpInTotalMap x (((start, stop), diff) : rms)
+  | x >= start && x <= stop = x + diff
+  | otherwise = lookUpInTotalMap x rms
 
 parseInts :: String -> [Int]
 parseInts = map read . words . filter (\c -> isDigit c || c == ' ')
@@ -49,19 +51,19 @@ parseLineMap s = LineMap (head x) (head $ tail x) (last x)
 isLineMap :: String -> Bool
 isLineMap s = length (parseInts s) == 3
 
-parseLinesToMaps :: [String] -> [LineMap] -> [Map Int Int] -> [Map Int Int]
-parseLinesToMaps [] _ m = filter (/= empty) m
-parseLinesToMaps [s] lm m = filter (/= empty) $ (++) m [lineMapsToTotalMaps ((++) lm [parseLineMap s]) Data.Map.empty]
+parseLinesToMaps :: [String] -> [LineMap] -> [[RangeMap]] -> [[RangeMap]]
+parseLinesToMaps [] _ m = filter (not . null) m
+parseLinesToMaps [s] lm m = filter (not . null) $ (++) m [lineMapsToTotalMaps ((++) lm [parseLineMap s]) []]
 parseLinesToMaps (s : ss) lm m
   | isLineMap s = parseLinesToMaps ss ((++) lm [parseLineMap s]) m
-  | not $ isLineMap s = parseLinesToMaps ss [] ((++) m [lineMapsToTotalMaps lm Data.Map.empty])
+  | not $ isLineMap s = parseLinesToMaps ss [] ((++) m [lineMapsToTotalMaps lm []])
 parseLinesToMaps _ _ _ = []
 
 parseText :: [String] -> Maybe Almanac
 parseText (x : xs) = dataToAlmanac (parseInts x) $ parseLinesToMaps xs [] []
 parseText _ = Nothing
 
-dataToAlmanac :: [Int] -> [Map Int Int] -> Maybe Almanac
+dataToAlmanac :: [Int] -> [[RangeMap]] -> Maybe Almanac
 dataToAlmanac seeds' [soilMap, fertilizerMap, waterMap, lightMap, temperatureMap, humidityMap, locationMap] =
   Just $
     Almanac
@@ -80,10 +82,10 @@ part1 :: Maybe Almanac -> Maybe Int
 part1 Nothing = Nothing
 part1 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = Just (almanacToLowestLocation seeds [sTS, sTF, fTW, wTL, lTT, tTH, hTL])
 
-almanacToLowestLocation :: [Int] -> [Map Int Int] -> Int
+almanacToLowestLocation :: [Int] -> [[RangeMap]] -> Int
 almanacToLowestLocation ints [] = minimum ints
 almanacToLowestLocation ints (m : ms) = almanacToLowestLocation (mapInts ints [] m) ms
 
-mapInts :: [Int] -> [Int] -> Map Int Int -> [Int]
+mapInts :: [Int] -> [Int] -> [RangeMap] -> [Int]
 mapInts [] l _ = l
 mapInts (x : xs) l m = mapInts xs ((++) l [lookUpInTotalMap x m]) m
