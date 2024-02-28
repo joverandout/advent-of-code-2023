@@ -2,6 +2,8 @@ module Day05 (module Day05) where
 
 import Control.Arrow
 import Data.Char (isDigit)
+import Data.List
+import qualified Data.Maybe
 
 day5 :: IO ()
 day5 = readFile "inputs/day05.txt" >>= print . parseText . lines
@@ -9,6 +11,8 @@ day5 = readFile "inputs/day05.txt" >>= print . parseText . lines
 data LineMap = LineMap {destination, source, mapLength :: Int} deriving (Show)
 
 type RangeMap = ((Int, Int), Int)
+
+type RangeMapTwo = (Int, Int, Int) -- (destination start, source start, range length)
 
 data Almanac = Almanac
   { seeds :: [Int],
@@ -90,8 +94,6 @@ part2 :: Maybe Almanac -> Maybe Int
 part2 Nothing = Nothing
 part2 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = undefined
 
--- Just (almanacToLowestLocation (parseSeedRanges seeds []) [sTS, sTF, fTW, wTL, lTT, tTH, hTL])
-
 almanacToLowestLocation :: [Int] -> [[RangeMap]] -> Int
 almanacToLowestLocation ints [] = minimum ints
 almanacToLowestLocation ints (m : ms) = almanacToLowestLocation (mapInts ints [] m) ms
@@ -100,11 +102,9 @@ mapInts :: [Int] -> [Int] -> [RangeMap] -> [Int]
 mapInts [] l _ = l
 mapInts (x : xs) l m = mapInts xs ((++) l [lookUpInTotalMap x m]) m
 
-singleSeedRangeMapConverstion :: (Int, Int) -> RangeMap -> [(Int, Int)]
-singleSeedRangeMapConverstion (seedStart, seedDiff) ((destination, source), increase)
-  | seedNotInRangeMapConversion seedStart (seedStart + seedDiff - 1) source (source + increase - 1) = [(seedStart + increase, seedDiff)]
-  | otherwise = undefined
+getRangesSeedRangeIntersects :: (Int, Int) -> [(Int, Int)] -> [(Int, Int)]
+getRangesSeedRangeIntersects (seedStart, seedEnd) = filter (seedInRangeMapConversion seedStart seedEnd)
 
-seedNotInRangeMapConversion :: Int -> Int -> Int -> Int -> Bool
-seedNotInRangeMapConversion seedStart seedEnd rangeStart rangeEnd =
-  (seedStart < rangeStart && seedEnd < rangeStart) || (seedStart > rangeEnd && seedEnd > rangeEnd)
+seedInRangeMapConversion :: Int -> Int -> (Int, Int) -> Bool
+seedInRangeMapConversion seedStart seedEnd (rangeStart, rangeEnd) =
+  not ((seedStart < rangeStart && seedEnd < rangeStart) || (seedStart > rangeEnd && seedEnd > rangeEnd))
