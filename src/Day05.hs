@@ -1,11 +1,10 @@
-{-# LANGUAGE ApplicativeDo #-}
-
 module Day05 (module Day05) where
 
+import Control.Arrow
 import Data.Char (isDigit)
 
 day5 :: IO ()
-day5 = readFile "inputs/day05.txt" >>= print . part1 . parseText . lines
+day5 = readFile "inputs/day05.txt" >>= print . (part1 &&& part2) . parseText . lines
 
 data LineMap = LineMap {destination, source, mapLength :: Int} deriving (Show)
 
@@ -42,6 +41,15 @@ lookUpInTotalMap x (((start, stop), diff) : rms)
 
 parseInts :: String -> [Int]
 parseInts = map read . words . filter (\c -> isDigit c || c == ' ')
+
+parseSeedRanges :: [Int] -> [Int] -> [Int]
+parseSeedRanges [] r = r
+parseSeedRanges (x : y : zs) r = parseSeedRanges zs ((++) r (intRange x y []))
+parseSeedRanges _ r = r
+
+intRange :: Int -> Int -> [Int] -> [Int]
+intRange _ 0 list = list
+intRange start difference list = intRange (start + 1) (difference - 1) ((++) list [start])
 
 parseLineMap :: String -> LineMap
 parseLineMap s = LineMap (head x) (head $ tail x) (last x)
@@ -81,6 +89,10 @@ dataToAlmanac _ _ = Nothing
 part1 :: Maybe Almanac -> Maybe Int
 part1 Nothing = Nothing
 part1 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = Just (almanacToLowestLocation seeds [sTS, sTF, fTW, wTL, lTT, tTH, hTL])
+
+part2 :: Maybe Almanac -> Maybe Int
+part2 Nothing = Nothing
+part2 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = Just (almanacToLowestLocation (parseSeedRanges seeds []) [sTS, sTF, fTW, wTL, lTT, tTH, hTL])
 
 almanacToLowestLocation :: [Int] -> [[RangeMap]] -> Int
 almanacToLowestLocation ints [] = minimum ints
