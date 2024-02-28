@@ -4,7 +4,7 @@ import Control.Arrow
 import Data.Char (isDigit)
 
 day5 :: IO ()
-day5 = readFile "inputs/day05.txt" >>= print . (part1 &&& part2) . parseText . lines
+day5 = readFile "inputs/day05.txt" >>= print . parseText . lines
 
 data LineMap = LineMap {destination, source, mapLength :: Int} deriving (Show)
 
@@ -42,14 +42,10 @@ lookUpInTotalMap x (((start, stop), diff) : rms)
 parseInts :: String -> [Int]
 parseInts = map read . words . filter (\c -> isDigit c || c == ' ')
 
-parseSeedRanges :: [Int] -> [Int] -> [Int]
+parseSeedRanges :: [Int] -> [(Int, Int)] -> [(Int, Int)]
 parseSeedRanges [] r = r
-parseSeedRanges (x : y : zs) r = parseSeedRanges zs ((++) r (intRange x y []))
+parseSeedRanges (x : y : zs) r = parseSeedRanges zs ((++) r [(x, y)])
 parseSeedRanges _ r = r
-
-intRange :: Int -> Int -> [Int] -> [Int]
-intRange _ 0 list = list
-intRange start difference list = intRange (start + 1) (difference - 1) ((++) list [start])
 
 parseLineMap :: String -> LineMap
 parseLineMap s = LineMap (head x) (head $ tail x) (last x)
@@ -92,7 +88,9 @@ part1 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = Just (almanacToLowest
 
 part2 :: Maybe Almanac -> Maybe Int
 part2 Nothing = Nothing
-part2 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = Just (almanacToLowestLocation (parseSeedRanges seeds []) [sTS, sTF, fTW, wTL, lTT, tTH, hTL])
+part2 (Just (Almanac seeds sTS sTF fTW wTL lTT tTH hTL)) = undefined
+
+-- Just (almanacToLowestLocation (parseSeedRanges seeds []) [sTS, sTF, fTW, wTL, lTT, tTH, hTL])
 
 almanacToLowestLocation :: [Int] -> [[RangeMap]] -> Int
 almanacToLowestLocation ints [] = minimum ints
@@ -101,3 +99,12 @@ almanacToLowestLocation ints (m : ms) = almanacToLowestLocation (mapInts ints []
 mapInts :: [Int] -> [Int] -> [RangeMap] -> [Int]
 mapInts [] l _ = l
 mapInts (x : xs) l m = mapInts xs ((++) l [lookUpInTotalMap x m]) m
+
+singleSeedRangeMapConverstion :: (Int, Int) -> RangeMap -> [(Int, Int)]
+singleSeedRangeMapConverstion (seedStart, seedDiff) ((destination, source), increase)
+  | seedNotInRangeMapConversion seedStart (seedStart + seedDiff - 1) source (source + increase - 1) = [(seedStart + increase, seedDiff)]
+  | otherwise = undefined
+
+seedNotInRangeMapConversion :: Int -> Int -> Int -> Int -> Bool
+seedNotInRangeMapConversion seedStart seedEnd rangeStart rangeEnd =
+  (seedStart < rangeStart && seedEnd < rangeStart) || (seedStart > rangeEnd && seedEnd > rangeEnd)
